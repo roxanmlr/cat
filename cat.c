@@ -40,11 +40,21 @@ static void main_loop(char *filename) {
   FILE *stream = stdin;
   int c = 0;
   if (filename && strcmp(filename, "-")) {
+#ifdef _WIN32
+    errno_t err = fopen_s(&stream, filename, "r");
+    if (err) {
+      char buf[1024];
+      strerror_s(buf, sizeof(buf), err);
+      fprintf(stderr, "cat: %s: %s\n", filename, buf);
+      return;
+    }
+#else
     stream = fopen(filename, "r");
     if (!stream) {
       fprintf(stderr, "cat: %s: %s\n", filename, strerror(errno));
       return;
     }
+#endif
   }
   int line_no = 1;
   int line_count = 0;
@@ -88,7 +98,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr,
                 "\033[1;31;40merror\033[0m: unexpected argument '-%c' found\n",
                 c);
-        fprintf(stderr, "Usage: cat [OPTION]... [FILE]...\n\nFor more information, try '--help'.\n");
+        fprintf(stderr, "Usage: cat [OPTION]... [FILE]...\n\nFor more "
+                        "information, try '--help'.\n");
         return EXIT_FAILURE;
       }
       switch (c) {
@@ -139,9 +150,9 @@ int main(int argc, char *argv[]) {
     n_opts++;
     argv[i][0] = 0;
   }
-  if (opt_help){
-      fputs(help, stdout);
-      return EXIT_SUCCESS;
+  if (opt_help) {
+    fputs(help, stdout);
+    return EXIT_SUCCESS;
   }
   if (argc == n_opts + 1)
     main_loop(NULL);
